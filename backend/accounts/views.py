@@ -1,20 +1,23 @@
 from rest_framework import generics, permissions, status
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import (
+    BuyerRegisterSerializer,
     ChangePasswordSerializer,
     LoginSerializer,
-    RegisterSerializer,
+    SellerApplicationSerializer,
     UserSerializer,
 )
 
 
 class RegisterView(APIView):
+    """Dedicated Buyer account registration endpoint."""
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
+        serializer = BuyerRegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         refresh = RefreshToken.for_user(user)
@@ -22,7 +25,27 @@ class RegisterView(APIView):
             {
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
-                'user': UserSerializer(user).data,
+                'user': UserSerializer(user, context={'request': request}).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class SellerApplyView(APIView):
+    """Dedicated Seller / Brand onboarding & verification application endpoint."""
+    permission_classes = [permissions.AllowAny]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def post(self, request):
+        serializer = SellerApplicationSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        refresh = RefreshToken.for_user(user)
+        return Response(
+            {
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': UserSerializer(user, context={'request': request}).data,
             },
             status=status.HTTP_201_CREATED,
         )
