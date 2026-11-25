@@ -28,11 +28,19 @@ export function resolveImageUrl(path) {
 
 export function extractApiError(error, fallbackMessage = 'Something went wrong. Please try again.') {
   const data = error?.response?.data;
-  if (!data) return { message: fallbackMessage, fieldErrors: {} };
+  if (!data) {
+    return {
+      message: error?.message || fallbackMessage,
+      fieldErrors: {},
+    };
+  }
 
   const fieldErrors = {};
-  if (data.errors && typeof data.errors === 'object') {
-    Object.entries(data.errors).forEach(([key, val]) => {
+  const source = data.errors && typeof data.errors === 'object' ? data.errors : data;
+
+  if (source && typeof source === 'object') {
+    Object.entries(source).forEach(([key, val]) => {
+      if (key === 'detail') return;
       if (Array.isArray(val)) {
         fieldErrors[key] = val.join(' ');
       } else if (typeof val === 'string') {
@@ -41,9 +49,13 @@ export function extractApiError(error, fallbackMessage = 'Something went wrong. 
     });
   }
 
+  const firstFieldMessage = Object.entries(fieldErrors)
+    .filter(([key]) => key !== 'non_field_errors')
+    .map(([, msg]) => msg)[0];
+
   const nonField = fieldErrors.non_field_errors;
   return {
-    message: nonField || data.detail || fallbackMessage,
+    message: nonField || data.detail || firstFieldMessage || fallbackMessage,
     fieldErrors,
   };
 }
