@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'marketplace',
     'seller',
     'buyer',
+    'orders',
 ]
 
 MIDDLEWARE = [
