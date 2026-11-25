@@ -7,45 +7,39 @@ import ErrorMessage from '../../components/ErrorMessage';
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSubmitting(true);
-
     try {
-      const loggedInUser = await login(formData);
-      if (loggedInUser.role === 'seller') {
-        navigate('/seller/dashboard', { replace: true });
-      } else {
-        navigate('/buyer/dashboard', { replace: true });
-      }
+      const user = await login({ email, password, expected_role: 'buyer' });
+      navigate(user.role === 'seller' ? '/seller/dashboard' : '/buyer/dashboard', {
+        replace: true,
+      });
     } catch (err) {
-      const parsed = extractApiError(err, 'Unable to sign in. Check your credentials.');
-      setError(parsed.message);
+      setError(extractApiError(err, 'Invalid buyer email or password.').message);
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="mx-auto max-w-md px-4 py-14">
+    <div className="mx-auto max-w-md px-4 py-14 sm:px-6">
       <div className="card-surface p-8">
         <p className="text-xs font-semibold uppercase tracking-widest text-terracotta">
-          Welcome Back
+          Collector Sign In
         </p>
         <h1 className="mt-1 font-serif text-2xl font-semibold text-ink">
-          Sign in to Varnika
+          Sign In to Varnika
         </h1>
         <p className="mt-1.5 text-sm text-ink-muted">
-          Access your artisan studio or track your craft enquiries.
+          Access your wishlist, shopping cart, saved addresses, and orders.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -57,12 +51,11 @@ export default function Login() {
             </label>
             <input
               id="email"
-              name="email"
               type="email"
               required
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="artisan@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
               className="input-field mt-1"
             />
           </div>
@@ -73,27 +66,34 @@ export default function Login() {
             </label>
             <input
               id="password"
-              name="password"
               type="password"
               required
-              value={formData.password}
-              onChange={handleChange}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
               className="input-field mt-1"
             />
           </div>
 
-          <button type="submit" disabled={submitting} className="btn-primary w-full">
+          <button type="submit" disabled={submitting} className="btn-primary w-full py-2.5">
             {submitting ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-ink-muted">
-          New to Varnika?{' '}
-          <Link to="/register" className="font-semibold text-terracotta hover:underline">
-            Create an account
-          </Link>
-        </p>
+        <div className="mt-6 space-y-2 border-t border-ivory-border pt-4 text-center text-sm text-ink-muted">
+          <p>
+            New to Varnika?{' '}
+            <Link to="/register" className="font-semibold text-terracotta hover:underline">
+              Create Buyer Account
+            </Link>
+          </p>
+          <p className="text-xs">
+            Are you an artisan or craft brand?{' '}
+            <Link to="/sell" className="font-semibold text-forest hover:underline">
+              Visit Seller Portal
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

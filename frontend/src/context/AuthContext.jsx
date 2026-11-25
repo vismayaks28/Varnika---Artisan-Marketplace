@@ -10,6 +10,13 @@ export function AuthProvider({ children }) {
   });
   const [loading, setLoading] = useState(true);
 
+  const refreshUser = async () => {
+    const res = await authApi.getMe();
+    setUser(res.data);
+    localStorage.setItem('varnika_user', JSON.stringify(res.data));
+    return res.data;
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('varnika_access_token');
     if (!token) {
@@ -17,12 +24,7 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    authApi
-      .getMe()
-      .then((res) => {
-        setUser(res.data);
-        localStorage.setItem('varnika_user', JSON.stringify(res.data));
-      })
+    refreshUser()
       .catch(() => {
         localStorage.removeItem('varnika_access_token');
         localStorage.removeItem('varnika_refresh_token');
@@ -45,8 +47,14 @@ export function AuthProvider({ children }) {
     return res.data.user;
   };
 
-  const register = async (formData) => {
-    const res = await authApi.register(formData);
+  const registerBuyer = async (formData) => {
+    const res = await authApi.registerBuyer(formData);
+    persistSession(res.data);
+    return res.data.user;
+  };
+
+  const applySeller = async (formData) => {
+    const res = await authApi.applySeller(formData);
     persistSession(res.data);
     return res.data.user;
   };
@@ -74,7 +82,9 @@ export function AuthProvider({ children }) {
         isSeller: user?.role === 'seller',
         isBuyer: user?.role === 'buyer',
         login,
-        register,
+        registerBuyer,
+        applySeller,
+        refreshUser,
         updateProfile,
         logout,
       }}

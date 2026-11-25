@@ -1,32 +1,27 @@
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { extractApiError } from '../../utils/formatters';
 import ErrorMessage from '../../components/ErrorMessage';
 
 export default function Register() {
-  const { register } = useAuth();
+  const { registerBuyer } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const initialRole = searchParams.get('role') === 'seller' ? 'seller' : 'buyer';
 
-  const [formData, setFormData] = useState({
-    role: initialRole,
+  const [form, setForm] = useState({
     first_name: '',
     last_name: '',
     email: '',
     phone: '',
     location: '',
-    craft_specialty: '',
-    bio: '',
     password: '',
   });
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e) => {
@@ -36,14 +31,10 @@ export default function Register() {
     setSubmitting(true);
 
     try {
-      const createdUser = await register(formData);
-      if (createdUser.role === 'seller') {
-        navigate('/seller/dashboard', { replace: true });
-      } else {
-        navigate('/buyer/dashboard', { replace: true });
-      }
+      await registerBuyer(form);
+      navigate('/buyer/dashboard', { replace: true });
     } catch (err) {
-      const parsed = extractApiError(err, 'Registration failed. Please check your details.');
+      const parsed = extractApiError(err, 'Could not create buyer account.');
       setError(parsed.message);
       setFieldErrors(parsed.fieldErrors);
     } finally {
@@ -52,67 +43,29 @@ export default function Register() {
   };
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-12">
+    <div className="mx-auto max-w-lg px-4 py-12 sm:px-6">
       <div className="card-surface p-8">
         <p className="text-xs font-semibold uppercase tracking-widest text-terracotta">
-          Join Varnika
+          Join as a Collector
         </p>
         <h1 className="mt-1 font-serif text-2xl font-semibold text-ink">
-          Create Your Account
+          Create Buyer Account
         </h1>
         <p className="mt-1.5 text-sm text-ink-muted">
-          Choose how you want to participate in the marketplace.
+          Shop authentic Indian handicrafts directly from verified artisan workshops.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <ErrorMessage message={error} />
-
-          <div>
-            <label className="block text-sm font-medium text-ink">Account Type</label>
-            <div className="mt-2 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setFormData((prev) => ({ ...prev, role: 'buyer' }))}
-                className={`rounded-md border p-3.5 text-left transition-colors ${
-                  formData.role === 'buyer'
-                    ? 'border-forest bg-forest-light text-forest'
-                    : 'border-ivory-border bg-white text-ink hover:bg-ivory-dark'
-                }`}
-              >
-                <div className="text-sm font-semibold">Buyer / Collector</div>
-                <div className="mt-0.5 text-xs opacity-80">
-                  Discover crafts and enquire with makers
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setFormData((prev) => ({ ...prev, role: 'seller' }))}
-                className={`rounded-md border p-3.5 text-left transition-colors ${
-                  formData.role === 'seller'
-                    ? 'border-terracotta bg-terracotta-light text-terracotta'
-                    : 'border-ivory-border bg-white text-ink hover:bg-ivory-dark'
-                }`}
-              >
-                <div className="text-sm font-semibold">Artisan / Seller</div>
-                <div className="mt-0.5 text-xs opacity-80">
-                  List handmade works and manage enquiries
-                </div>
-              </button>
-            </div>
-          </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="first_name" className="block text-sm font-medium text-ink">
-                First Name
-              </label>
+              <label className="block text-sm font-medium text-ink">First Name</label>
               <input
-                id="first_name"
                 name="first_name"
                 type="text"
                 required
-                value={formData.first_name}
+                value={form.first_name}
                 onChange={handleChange}
                 className="input-field mt-1"
               />
@@ -122,15 +75,12 @@ export default function Register() {
             </div>
 
             <div>
-              <label htmlFor="last_name" className="block text-sm font-medium text-ink">
-                Last Name
-              </label>
+              <label className="block text-sm font-medium text-ink">Last Name</label>
               <input
-                id="last_name"
                 name="last_name"
                 type="text"
                 required
-                value={formData.last_name}
+                value={form.last_name}
                 onChange={handleChange}
                 className="input-field mt-1"
               />
@@ -142,15 +92,12 @@ export default function Register() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-ink">
-                Email Address
-              </label>
+              <label className="block text-sm font-medium text-ink">Email Address</label>
               <input
-                id="email"
                 name="email"
                 type="email"
                 required
-                value={formData.email}
+                value={form.email}
                 onChange={handleChange}
                 className="input-field mt-1"
               />
@@ -160,15 +107,12 @@ export default function Register() {
             </div>
 
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-ink">
-                Phone Number
-              </label>
+              <label className="block text-sm font-medium text-ink">Phone Number</label>
               <input
-                id="phone"
                 name="phone"
                 type="tel"
                 required
-                value={formData.phone}
+                value={form.phone}
                 onChange={handleChange}
                 placeholder="+91 98765 43210"
                 className="input-field mt-1"
@@ -180,17 +124,14 @@ export default function Register() {
           </div>
 
           <div>
-            <label htmlFor="location" className="block text-sm font-medium text-ink">
-              City &amp; State
-            </label>
+            <label className="block text-sm font-medium text-ink">City &amp; State</label>
             <input
-              id="location"
               name="location"
               type="text"
               required
-              value={formData.location}
+              value={form.location}
               onChange={handleChange}
-              placeholder="e.g., Jaipur, Rajasthan"
+              placeholder="e.g., Bengaluru, Karnataka"
               className="input-field mt-1"
             />
             {fieldErrors.location && (
@@ -198,51 +139,16 @@ export default function Register() {
             )}
           </div>
 
-          {formData.role === 'seller' && (
-            <>
-              <div>
-                <label htmlFor="craft_specialty" className="block text-sm font-medium text-ink">
-                  Craft Specialty
-                </label>
-                <input
-                  id="craft_specialty"
-                  name="craft_specialty"
-                  type="text"
-                  value={formData.craft_specialty}
-                  onChange={handleChange}
-                  placeholder="e.g., Blue Pottery, Handloom Banarasi Weaving, Brassware"
-                  className="input-field mt-1"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="bio" className="block text-sm font-medium text-ink">
-                  Workshop Story (Optional)
-                </label>
-                <textarea
-                  id="bio"
-                  name="bio"
-                  rows={3}
-                  value={formData.bio}
-                  onChange={handleChange}
-                  placeholder="Describe your craft tradition, materials, or studio background..."
-                  className="input-field mt-1"
-                />
-              </div>
-            </>
-          )}
-
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-ink">
-              Password (minimum 8 characters)
+            <label className="block text-sm font-medium text-ink">
+              Password (minimum 8 characters, mix of letters &amp; numbers)
             </label>
             <input
-              id="password"
               name="password"
               type="password"
               required
               minLength={8}
-              value={formData.password}
+              value={form.password}
               onChange={handleChange}
               className="input-field mt-1"
             />
@@ -251,17 +157,25 @@ export default function Register() {
             )}
           </div>
 
-          <button type="submit" disabled={submitting} className="btn-primary w-full">
-            {submitting ? 'Creating Account...' : 'Create Account'}
+          <button type="submit" disabled={submitting} className="btn-primary w-full py-2.5">
+            {submitting ? 'Creating Account...' : 'Create Buyer Account'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-ink-muted">
-          Already have an account?{' '}
-          <Link to="/login" className="font-semibold text-terracotta hover:underline">
-            Sign in
-          </Link>
-        </p>
+        <div className="mt-6 space-y-2 border-t border-ivory-border pt-4 text-center text-sm text-ink-muted">
+          <p>
+            Already have a buyer account?{' '}
+            <Link to="/login" className="font-semibold text-terracotta hover:underline">
+              Sign In
+            </Link>
+          </p>
+          <p className="text-xs">
+            Want to sell handmade crafts on Varnika?{' '}
+            <Link to="/sell" className="font-semibold text-forest hover:underline">
+              Apply as an Artisan Brand
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
